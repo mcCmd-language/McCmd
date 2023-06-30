@@ -10,7 +10,7 @@ int* splice(int*, int, int, int);
 int main(int argc, char* argv[]) {
 
 	FILE* fp;
-	char* fileName = "C:/Users/minyee2913/Desktop/McCmd/Release/test.mcCmd";
+	char* fileName = "./test/test.mcCmd";
 	printf("%s", fileName);
 
 	fp = fopen(fileName, "r");
@@ -31,10 +31,8 @@ int main(int argc, char* argv[]) {
 	}
 
 	int c = fgetc(fp);
-	printf("%c", c);
 	int i = 0;
 	while (c != EOF) {
-		printf("%c", c);
 		token[i] = c;
 
 		c = fgetc(fp);
@@ -66,6 +64,7 @@ struct Variable {
 };
 
 void parseCode(int* token, int size) {
+	printf("\n");
 	int* parsedToken;
 	parsedToken = malloc(sizeof(int) * size);
 	int parseStart = -1;
@@ -78,7 +77,6 @@ void parseCode(int* token, int size) {
 
 	for (int i = 0; i < size; i++) {
 		char t = token[i];
-		printf("%c", t);
 		if (parseType == -1) {
 			if (t == '@') {
 				parseStart = i;
@@ -87,7 +85,7 @@ void parseCode(int* token, int size) {
 		}
 		else {
 			if (parseType == 0) {
-				if (i + 2 == '/') {
+				if (token[i + 2] == '/') {
 					parseType = 2;
 				}
 				else {
@@ -95,24 +93,25 @@ void parseCode(int* token, int size) {
 				}
 			}
 			else if (parseType == 1) {
-				if (i == ' ' || i == ';') {
-					if (i == ';') parseType = -1;
+				if (t == ' ' || t == ';') {
+					if (t == ';') parseType = -1;
 					int parseEnd = i - 1;
 
 					struct Variable var;
 					var.name = (char*)malloc(sizeof(char) * parseEnd - parseStart);
 
-					for (int j = 0; j < parseEnd - parseStart; j++) {
-						var.name[j] = token[parseStart + j];
+					for (int j = 0; j <= parseEnd - parseStart - 2; j++) {
+						var.name[j] = token[parseStart + j + 2];
 					}
 
-					printf("%s", var.name);
+					printf("\n%s", var.name);
 
 					variables[varIndex] = var;
 					varIndex++;
 				}
 			}
 		}
+		printf("\n%c - %d", t, parseType);
 	}
 }
 
