@@ -51,8 +51,8 @@ long fsize(FILE* fp) {
 }
 
 
-//define = 0, defineVariable = 1, defineFunc = 2, funcVariable = 3, callFunc = 4
-
+//define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
+//variableType.. null £½ -1 int = 0, float = 1, double = 2, string = 3, array = 4, json = 5
 struct Variable {
 	char* name;
 	int type;
@@ -72,8 +72,10 @@ void parseCode(int* token, int size) {
 	int parseType = -1;
 
 	int varIndex = 0;
+	int varDeclared = 0;
 	struct Variable* variables;
 	variables = (struct Variable*)malloc(sizeof(struct Variable) * size);
+	if (variables == NULL) return;
 
 	for (int i = 0; i < size; i++) {
 		char t = token[i];
@@ -93,25 +95,108 @@ void parseCode(int* token, int size) {
 				}
 			}
 			else if (parseType == 1) {
-				if (t == ' ' || t == ';') {
-					if (t == ';') parseType = -1;
-					int parseEnd = i - 1;
+				if (t == '[' || t == ';') {
+					if (t == ';') {
+						parseType = -1;
+						varDeclared = 0;
+					}
+					parseEnd = i - 1;
 
 					struct Variable var;
-					var.name = (char*)malloc(sizeof(char) * parseEnd - parseStart);
+					var.name = (char*)malloc(sizeof(char) * parseEnd - parseStart + 2);
+					var.type = -1;
 
 					for (int j = 0; j <= parseEnd - parseStart - 2; j++) {
 						var.name[j] = token[parseStart + j + 2];
 					}
+					var.name[parseEnd - parseStart - 1] = '\0';
 
-					printf("\n%s", var.name);
+					printf("\n%s - var.name %d", var.name, varIndex);
 
 					variables[varIndex] = var;
 					varIndex++;
+					varDeclared = 1;
+				}
+
+				if (varDeclared) {
+					if (t == '[') {
+						parseStart = i;
+					}
+					else if (t == ',' || t == ']') {
+						if (t == ']') parseType = -1;
+						parseEnd = i - 1;
+
+						char varArg[20];
+						char* varValue = (char*)malloc(sizeof(char) * parseEnd - parseStart + 2);
+						int a_index = 0;
+
+						int valIndex;
+						int isValue = 0;
+						for (int j = 0; j <= parseEnd - parseStart; j++) {
+							int to = token[parseStart + j + 1];
+
+							if (to == '=') {
+								valIndex = j;
+								isValue = 1;
+								continue;
+							}
+
+							if (isValue) {
+								varValue[j - valIndex - 1] = to;
+							}
+							else {
+								if (to == ' ' || to == '\n') continue;
+
+								varArg[a_index] = to;
+								a_index++;
+							}
+						}
+
+						varArg[a_index] = '\0';
+						varValue[parseEnd - parseStart - valIndex - 1] = '\0';
+
+						printf("\n%s - varArg", varArg);
+						printf("\n%s - varValue", varValue);
+
+
+						if (strcmp(varArg, "type") == 0) {
+							if (strcmp(varValue, "int") == 0) {
+								variables[varIndex - 1].type = 0;
+							} else if (strcmp(varValue, "float") == 0) {
+								variables[varIndex - 1].type = 1;
+							} else if (strcmp(varValue, "double") == 0) {
+								variables[varIndex - 1].type = 2;
+							}
+						}
+						else if (strcmp(varArg, "value") == 0) {
+							switch (variables[varIndex - 1].type) {
+								case 0:
+									variables[varIndex - 1].valueInt = atoi(varValue);
+									break;
+								case 1:
+									variables[varIndex - 1].valueFloat = (float)atof(varValue);
+									break;
+								case 2:
+									variables[varIndex - 1].valueDouble = (double)atof(varValue);
+									break;
+								default:
+									break;
+							}
+						}
+
+						if (t == ',') parseStart = i;
+					}
 				}
 			}
 		}
 		printf("\n%c - %d", t, parseType);
+	}
+
+	for (int i = 0; i <= varIndex; i++) {
+		if (variables[i].name == NULL) return;
+		if (variables[i].type == 0) printf("\n%s(int) - %d", variables[i].name, variables[i].valueInt);
+		else if (variables[i].type == 1) printf("\n%s(float) - %.3lf", variables[i].name, variables[i].valueFloat);
+		else if (variables[i].type == 2) printf("\n%s(double) - %.3lf", variables[i].name, variables[i].valueDouble);
 	}
 }
 
