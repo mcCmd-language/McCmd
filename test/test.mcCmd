@@ -1,3 +1,5 @@
 @ test[type=int,value=19000];  @ test[type=float,value=1.199];  @ test1a[type=double,value=9.199];
 @ tes21221212t1a[type=double,value=9.199];
 @ tes2222t1a[type=double,value=9.199];
+@ str[type=string,value="wwwww"];
+@ bool[type=bool,value=true];
