@@ -1,4 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
+#ifndef printf_s
+#define printf_s printf
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +19,7 @@ int main(int argc, char* argv[]) {
 	fp = fopen(fileName, "r");
 
 	if (fp == NULL) {
-		printf_s("\nÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù.");
+		printf_s("\níŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
 
 		return 0;
 	}
@@ -52,7 +55,7 @@ long fsize(FILE* fp) {
 
 
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
-//variableType.. null £½ -1 int = 0, float = 1, double = 2, bool = 3, string = 4, array = 5, json = 6
+//variableType.. null = -1 int = 0, float = 1, double = 2, bool = 3, string = 4, array = 5, json = 6
 struct Variable {
 	char* name;
 	int type;
@@ -91,11 +94,18 @@ void parseCode(int* token, int size) {
 			else if (t == '/') {
 				parseStart = i;
 				parseType = 5;
+			} else if (t == '#' && token[i+1] == '#') {
+				while (token[i] != '\n') {
+					i++;
+				}
+				parseStart = i;
+				continue;
 			}
 		}
 		else {
 			if (parseType == 0) {
 				if (token[i + 2] == '/') {
+					// TODO: ì—¬ê¸° defineFuncì—¬ì•¼ ë˜ëŠ”ê±° ì•„ë‹˜?
 					parseType = 2;
 				}
 				else {
@@ -309,7 +319,7 @@ int* splice(int* arr, int startAt, int endAt, int size) {
 			continue;
 		}
 		else {
-			arr2[ii] = arr[i];
+			arr2[ii] = &arr[i];
 			ii++;
 		}
 	}
