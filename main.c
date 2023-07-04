@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#ifdef __linux__
+#define scanf_s scanf
+#define printf_s printf
+#endif
 
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
 //variableType.. null = -1 int = 0, float = 1, double = 2, bool = 3, string = 4, array = 5, json = 6
