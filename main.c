@@ -8,6 +8,7 @@
 #define printf_s printf
 #endif
 
+
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
 //variableType.. null = -1 int = 0, float = 1, double = 2, bool = 3, string = 4, array = 5, json = 6
 struct Variable {
@@ -28,11 +29,13 @@ struct ParseTextResult {
 };
 
 long fsize(FILE*);
-void parseCode(int*, int size);
-struct ParseTextResult ParseString(int*, int, int);
+void parseCode(char*, int size);
+struct ParseTextResult ParseString(char*, int, int);
 struct Variable findVariableByName(char*);
 int findVariableIndex(struct Variable);
 char* getVariableName(char*);
+void scoreMath(char**, char**, int, struct Variable);
+int scoreTest(char**, char**, int, struct Variable);
 
 int IsAccessableVariable(struct Variable var) {
 	if (var.type > 6 || var.type < -1) return 0;
@@ -62,6 +65,8 @@ int main(int argc, char* argv[]) {
 	//char* fileName = "../test/test.mcCmd";
 	//printf("%s", fileName);
 
+
+
 	if (argc < 2) {
 		printf("\nplease enter file path");
 
@@ -77,15 +82,15 @@ int main(int argc, char* argv[]) {
 	}
 
 	int size = fsize(fp);
-	int* token;
-	token = malloc(sizeof(int) * size);
+	char* token;
+	token = malloc(sizeof(char) * size);
 
 	if (token == NULL) {
 		printf("\ntoken is NULL");
 		return 0;
 	}
 
-	int c = fgetc(fp);
+	char c = fgetc(fp);
 	int i = 0;
 	while (c != EOF) {
 		token[i] = c;
@@ -94,7 +99,27 @@ int main(int argc, char* argv[]) {
 		i++;
 	}
 
+	variables = (struct Variable*)malloc(sizeof(struct Variable) * size);
+	varSize = size;
+	if (variables == NULL) return;
+
 	parseCode(token, size);
+
+
+	printf("\n\n");
+
+	for (int i = 0; i <= varSize; i++) {
+		if (variables[i].name == NULL) return;
+		if (!IsAccessableVariable(variables[i])) return;
+		if (variables[i].type == 0) printf("\n%s(int) - %d", variables[i].name, variables[i].valueInt);
+		else if (variables[i].type == 1) printf("\n%s(float) - %.3lf", variables[i].name, variables[i].valueFloat);
+		else if (variables[i].type == 2) printf("\n%s(double) - %.3lf", variables[i].name, variables[i].valueDouble);
+		else if (variables[i].type == 3) {
+			if (variables[i].valueBool == 1) printf("\n%s(bool) - true", variables[i].name);
+			else printf("\n%s(bool) - false", variables[i].name);
+		}
+		else if (variables[i].type == 4) printf("\n%s(string) - %s", variables[i].name, variables[i].valueStr);
+	}
 }
 
 long fsize(FILE* fp) {
@@ -105,8 +130,8 @@ long fsize(FILE* fp) {
 	return sz;
 }
 
-void parseCode(int* token, int size) {
-	printf("\n");
+void parseCode(char* token, int size) {
+
 	int* parsedToken;
 	parsedToken = malloc(sizeof(int) * size);
 	int parseStart = -1;
@@ -116,9 +141,7 @@ void parseCode(int* token, int size) {
 	int varIndex = 0;
 	int varDeclared = 0;
 	int parsingString = 0;
-	variables = (struct Variable*)malloc(sizeof(struct Variable) * size);
-	varSize = size;
-	if (variables == NULL) return;
+	int parsingBlock = 0;
 
 	int funcCalled = 0;
 
@@ -267,7 +290,7 @@ void parseCode(int* token, int size) {
 
 									break;
 								case 4:
-									parse = ParseString((int*)varValue, 0, parseEnd - parseStart);
+									parse = ParseString(varValue, 0, parseEnd - parseStart);
 
 									variables[varIndex - 1].valueStr = (char*)malloc(sizeof(char) * parse.size);
 
@@ -288,12 +311,24 @@ void parseCode(int* token, int size) {
 				}
 			}
 			else if (parseType == 5) {
-				if (t == ';') {
+				if (t == '#') {
+					if (parsingBlock) {
+						parsingBlock = 0;
+					}
+					else {
+						parsingBlock = 1;
+
+					}
+
+					continue;
+				}
+				if (t == ';' && !parsingBlock) {
 					parseType = -1;
 					parseEnd = i - 1;
 
 					char** args = (char**)malloc(sizeof(char*) * (parseEnd - parseStart));
 					char** argOrigins = (char**)malloc(sizeof(char*) * (parseEnd - parseStart));
+					int* argSizes = (int*)malloc(sizeof(int) * (parseEnd - parseStart));
 					for (int i = 0; i < (parseEnd - parseStart); i++) {
 						args[i] = (char*)malloc(sizeof(char) * (parseEnd - parseStart));
 						argOrigins[i] = (char*)malloc(sizeof(char) * (parseEnd - parseStart));
@@ -318,7 +353,19 @@ void parseCode(int* token, int size) {
 							}
 						}
 
-						if ((to == ' ' || to == ';') && !parsingString) {
+						if (to == '#') {
+							if (parsingBlock) {
+								parsingBlock = 0;
+							}
+							else {
+								parsingBlock = 1;
+
+							}
+
+							continue;
+						}
+
+						if ((to == ' ' || to == ';') && !parsingString && !parsingBlock) {
 							argEnd = j - 1;
 
 							struct ParseTextResult parsedStr = ParseString(token, parseStart + argStart + 1, parseStart + argEnd + 1);
@@ -331,8 +378,10 @@ void parseCode(int* token, int size) {
 							}
 							for (int s = 0; s <= argEnd - argStart + 1; s++) {
 								argOrigins[argIndex][s] = token[parseStart + s + argStart + 1];
-								//printf("\ntw - %c %d %d %d", argOrigins[argIndex][s], parsedStr.size, s, argIndex);
 							}
+							argSizes[argIndex] = argEnd - argStart + 1;
+
+							//printf("\n--%s", argOrigins[argIndex]);
 
 							args[argIndex][parsedStr.size] = '\0';
 							argOrigins[argIndex][argEnd - argStart + 1] = '\0';
@@ -384,90 +433,43 @@ void parseCode(int* token, int size) {
 					else if (strcmp(argOrigins[0], "scoreboard") == 0) {
 						char* name = getVariableName(argOrigins[1]);
 						struct Variable var = findVariableByName(name);
-						int index = findVariableIndex(var);
 
-						if (index == -1) {
-							printf("\nunknown index error");
-						}
-						else if (var.type == 0) {
-							if (strcmp(argOrigins[2], "+=") == 0) {
-								variables[index].valueInt += atoi(args[3]);
+						scoreMath(args, argOrigins, 0, var);
+					}
+					else if (strcmp(argOrigins[0], "execute") == 0) {
+						struct Variable var;
+						int once = 1;
+						int repeat = 0;
+						while (once || repeat) {
+							for (int a = 1; a < argIndex; a++) {
+								//printf("\n%s", argOrigins[a]);
+								if (strcmp(argOrigins[a], "at") == 0) {
+									char* name = getVariableName(argOrigins[a + 1]);
+									var = findVariableByName(name);
+
+									a++;
+								}
+								else if (strcmp(argOrigins[a], "score") == 0) {
+									scoreMath(args, argOrigins, a - 1, var);
+
+									if (strcmp(argOrigins[a + 1], "random")) a += 2;
+									else a++;
+								}
+								else if (strcmp(argOrigins[a], "while") == 0) {
+									repeat = scoreTest(args, argOrigins, a - 1, var);
+									a+= 2;
+								}
+								else if (strcmp(argOrigins[a], "run") == 0) {
+									argOrigins[a + 1][0] = ' ';
+									argOrigins[a + 1][argSizes[a+1] - 1] = '\0';
+
+									parseCode(argOrigins[a + 1], varSize);
+
+									a++;
+								}
+
+								if (once) once = 0;
 							}
-							else if (strcmp(argOrigins[2], "-=") == 0) {
-								variables[index].valueInt = var.valueInt - atoi(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "=") == 0) {
-								variables[index].valueInt = atoi(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "*=") == 0) {
-								variables[index].valueInt *= atoi(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "/=") == 0) {
-								variables[index].valueInt /= atoi(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "%=") == 0) {
-								variables[index].valueInt %= atoi(args[3]);
-							} else if (strcmp(argOrigins[2], "random") == 0) {
-								srand((unsigned int)time(NULL));
-								int min = atoi(args[3]);
-								int max = atoi(args[4]);
-								variables[index].valueInt = (int)rand()%(max - min) + min;
-							}
-						}
-						else if (var.type == 1) {
-							if (strcmp(argOrigins[2], "+=") == 0) {
-								variables[index].valueFloat += (float)atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "-=") == 0) {
-								variables[index].valueFloat -= (float)atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "=") == 0) {
-								variables[index].valueFloat = (float)atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "*=") == 0) {
-								variables[index].valueFloat *= (float)atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "/=") == 0) {
-								variables[index].valueFloat /= (float)atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "%=") == 0) {
-								variables[index].valueFloat = (float)((int)(var.valueFloat) % (int)atof(args[3]));
-							}
-							else if (strcmp(argOrigins[2], "random") == 0) {
-								srand((unsigned int)time(NULL));
-								float min = (float)atof(args[3]);
-								float max = (float)atof(args[4]);
-								variables[index].valueFloat = (rand() % (int)((max - min) + min) * 1000) / 1000.0f;
-							}
-						}
-						else if (var.type == 2) {
-							if (strcmp(argOrigins[2], "+=") == 0) {
-								var.valueDouble += atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "-=") == 0) {
-								var.valueDouble -= atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "=") == 0) {
-								var.valueDouble = atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "*=") == 0) {
-								var.valueDouble *= atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "/=") == 0) {
-								var.valueDouble /= atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "%=") == 0) {
-								var.valueDouble = (int)(var.valueFloat) % (int)atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "random") == 0) {
-								srand((unsigned int)time(NULL));
-								double min = atof(args[3]);
-								double max = atof(args[4]);
-								variables[index].valueDouble = (rand() % (int)((max - min) + min) * 1000) / 1000.0;
-							}
-						}
-						else {
-							printf("\nscoreboard can only used by number type variable");
 						}
 					}
 				}
@@ -475,23 +477,9 @@ void parseCode(int* token, int size) {
 		}
 		//printf("\n%c - %d", t, parseType);
 	}
-
-	printf("\n\n");
-
-	for (int i = 0; i <= varIndex; i++) {
-		if (variables[i].name == NULL) return;
-		if (variables[i].type == 0) printf("\n%s(int) - %d", variables[i].name, variables[i].valueInt);
-		else if (variables[i].type == 1) printf("\n%s(float) - %.3lf", variables[i].name, variables[i].valueFloat);
-		else if (variables[i].type == 2) printf("\n%s(double) - %.3lf", variables[i].name, variables[i].valueDouble);
-		else if (variables[i].type == 3) {
-			if (variables[i].valueBool == 1) printf("\n%s(bool) - true", variables[i].name);
-			else printf("\n%s(bool) - false", variables[i].name);
-		}
-		else if (variables[i].type == 4) printf("\n%s(string) - %s", variables[i].name, variables[i].valueStr);
-	}
 }
 
-struct ParseTextResult ParseString(int* token, int start, int end) {
+struct ParseTextResult ParseString(char* token, int start, int end) {
 	char to;
 	int parsing = 0;
 	int varParse = 0;
@@ -641,5 +629,160 @@ int findVariableIndex(struct Variable var_) {
 	}
 
 	return -1;
+}
+
+void scoreMath(char** args, char** argOrigins, int argI, struct Variable var) {
+	int index = findVariableIndex(var);
+
+	if (index == -1) {
+		printf("\nunknown index error");
+	}
+	else if (var.type == 0) {
+		if (strcmp(argOrigins[2 + argI], "+=") == 0) {
+			variables[index].valueInt += atoi(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "-=") == 0) {
+			variables[index].valueInt = var.valueInt - atoi(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "=") == 0) {
+			variables[index].valueInt = atoi(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "*=") == 0) {
+			variables[index].valueInt *= atoi(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "/=") == 0) {
+			variables[index].valueInt /= atoi(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "%=") == 0) {
+			variables[index].valueInt %= atoi(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "random") == 0) {
+			srand((unsigned int)time(NULL));
+			int min = atoi(args[3 + argI]);
+			int max = atoi(args[4 + argI]);
+			variables[index].valueInt = (int)rand() % (max - min) + min;
+		}
+	}
+	else if (var.type == 1) {
+		if (strcmp(argOrigins[2 + argI], "+=") == 0) {
+			variables[index].valueFloat += (float)atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "-=") == 0) {
+			variables[index].valueFloat -= (float)atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "=") == 0) {
+			variables[index].valueFloat = (float)atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "*=") == 0) {
+			variables[index].valueFloat *= (float)atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "/=") == 0) {
+			variables[index].valueFloat /= (float)atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "%=") == 0) {
+			variables[index].valueFloat = (float)((int)(var.valueFloat) % (int)atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "random") == 0) {
+			srand((unsigned int)time(NULL));
+			float min = (float)atof(args[3 + argI]);
+			float max = (float)atof(args[4 + argI]);
+			variables[index].valueFloat = (rand() % (int)((max - min) + min) * 1000) / 1000.0f;
+		}
+	}
+	else if (var.type == 2) {
+		if (strcmp(argOrigins[2 + argI], "+=") == 0) {
+			var.valueDouble += atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "-=") == 0) {
+			var.valueDouble -= atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "=") == 0) {
+			var.valueDouble = atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "*=") == 0) {
+			var.valueDouble *= atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "/=") == 0) {
+			var.valueDouble /= atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "%=") == 0) {
+			var.valueDouble = (int)(var.valueFloat) % (int)atof(args[3 + argI]);
+		}
+		else if (strcmp(argOrigins[2 + argI], "random") == 0) {
+			srand((unsigned int)time(NULL));
+			double min = atof(args[3 + argI]);
+			double max = atof(args[4 + argI]);
+			variables[index].valueDouble = (rand() % (int)((max - min) + min) * 1000) / 1000.0;
+		}
+	}
+	else {
+		printf("\nscoreboard can only used by number type variable");
+	}
+}
+
+int scoreTest(char** args, char** argOrigins, int argI, struct Variable var) {
+	int index = findVariableIndex(var);
+
+	printf("\n%s", argOrigins[2 + argI]);
+	printf(" %s", argOrigins[3 + argI]);
+
+	if (index == -1) {
+		printf("\nunknown index error");
+	}
+	else if (var.type == 0) {
+		if (strcmp(argOrigins[2 + argI], ">") == 0) {
+			return (variables[index].valueInt > atoi(args[3 + argI]));
+		} else if (strcmp(argOrigins[2 + argI], "<") == 0) {
+			return (variables[index].valueInt < atoi(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "<=") == 0) {
+			return (variables[index].valueInt <= atoi(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "==") == 0) {
+			return (variables[index].valueInt == atoi(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "!=") == 0) {
+			return (variables[index].valueInt != atoi(args[3 + argI]));
+		}
+	}
+	else if (var.type == 1) {
+		if (strcmp(argOrigins[2 + argI], ">") == 0) {
+			return (variables[index].valueFloat > (float)atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "<") == 0) {
+			return (variables[index].valueFloat < (float)atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "<=") == 0) {
+			return (variables[index].valueFloat <= (float)atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "==") == 0) {
+			return (variables[index].valueFloat == (float)atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "!=") == 0) {
+			return (variables[index].valueFloat != (float)atof(args[3 + argI]));
+		}
+	}
+	else if (var.type == 2) {
+		if (strcmp(argOrigins[2 + argI], ">") == 0) {
+			return (variables[index].valueDouble > atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "<") == 0) {
+			return (variables[index].valueDouble < atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "<=") == 0) {
+			return (variables[index].valueDouble <= atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "==") == 0) {
+			return (variables[index].valueDouble == atof(args[3 + argI]));
+		}
+		else if (strcmp(argOrigins[2 + argI], "!=") == 0) {
+			return (variables[index].valueDouble != atof(args[3 + argI]));
+		}
+	}
+	else {
+		printf("\nscoreboard can only used by number type variable");
+	}
+
+	return 0;
 }
 

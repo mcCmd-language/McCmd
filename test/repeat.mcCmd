@@ -1,0 +1,11 @@
+@ i[type=int,value=0];
+@ one[type=int,value=1];
+@ str[type=string,value="_"];
+
+/execute at @i while < 10 run #
+    /say "write something: ";
+    /replaceitem @str*;
+
+    /say "
+    you write @i*.: @str*";
+# score += 1;
