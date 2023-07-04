@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
 //variableType.. null = -1 int = 0, float = 1, double = 2, bool = 3, string = 4, array = 5, json = 6
@@ -23,9 +24,10 @@ struct ParseTextResult {
 };
 
 long fsize(FILE*);
-void parseCode(unsigned int*, int size);
-struct ParseTextResult ParseString(unsigned int*, int, int);
+void parseCode(int*, int size);
+struct ParseTextResult ParseString(int*, int, int);
 struct Variable findVariableByName(char*);
+int findVariableIndex(struct Variable);
 char* getVariableName(char*);
 
 int IsAccessableVariable(struct Variable var) {
@@ -34,17 +36,17 @@ int IsAccessableVariable(struct Variable var) {
 }
 
 int getNumLength(float num) {
-	int count = 0;
-	while (num > 0) {
+	int count = 1;
+	while (num > 10) {
 		num /= 10;
 		count++;
 	}
-	while (num < 0) {
+	while (num < -10) {
 		num *= 10;
 		count++;
 	}
 
-	return count;
+	return count + 1;
 }
 
 struct Variable* variables;
@@ -71,15 +73,15 @@ int main(int argc, char* argv[]) {
 	}
 
 	int size = fsize(fp);
-	unsigned int* token;
-	token = malloc(sizeof(unsigned int) * size);
+	int* token;
+	token = malloc(sizeof(int) * size);
 
 	if (token == NULL) {
 		printf("\ntoken is NULL");
 		return 0;
 	}
 
-	unsigned int c = fgetc(fp);
+	int c = fgetc(fp);
 	int i = 0;
 	while (c != EOF) {
 		token[i] = c;
@@ -99,7 +101,7 @@ long fsize(FILE* fp) {
 	return sz;
 }
 
-void parseCode(unsigned int* token, int size) {
+void parseCode(int* token, int size) {
 	printf("\n");
 	int* parsedToken;
 	parsedToken = malloc(sizeof(int) * size);
@@ -193,7 +195,7 @@ void parseCode(unsigned int* token, int size) {
 						int vvIndex;
 						int isValue = 0;
 						for (int j = 0; j <= parseEnd - parseStart; j++) {
-							unsigned int to = token[parseStart + j + 1];
+							int to = token[parseStart + j + 1];
 
 							if (to == '=') {
 								valIndex = j;
@@ -261,7 +263,7 @@ void parseCode(unsigned int* token, int size) {
 
 									break;
 								case 4:
-									parse = ParseString(varValue, 0, parseEnd - parseStart);
+									parse = ParseString((int*)varValue, 0, parseEnd - parseStart);
 
 									variables[varIndex - 1].valueStr = (char*)malloc(sizeof(char) * parse.size);
 
@@ -350,7 +352,7 @@ void parseCode(unsigned int* token, int size) {
 							scanf("%d", &var.valueInt);
 						}
 						else if (var.type == 1) {
-							scanf("%lf", &var.valueFloat);
+							scanf("%f", &var.valueFloat);
 						}
 						else if (var.type == 2) {
 							scanf("%lf", &var.valueDouble);
@@ -375,6 +377,95 @@ void parseCode(unsigned int* token, int size) {
 							strcpy(var.valueStr, input);
 						}
 					}
+					else if (strcmp(argOrigins[0], "scoreboard") == 0) {
+						char* name = getVariableName(argOrigins[1]);
+						struct Variable var = findVariableByName(name);
+						int index = findVariableIndex(var);
+
+						if (index == -1) {
+							printf("\nunknown index error");
+						}
+						else if (var.type == 0) {
+							if (strcmp(argOrigins[2], "+=") == 0) {
+								variables[index].valueInt += atoi(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "-=") == 0) {
+								variables[index].valueInt = var.valueInt - atoi(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "=") == 0) {
+								variables[index].valueInt = atoi(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "*=") == 0) {
+								variables[index].valueInt *= atoi(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "/=") == 0) {
+								variables[index].valueInt /= atoi(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "%=") == 0) {
+								variables[index].valueInt %= atoi(args[3]);
+							} else if (strcmp(argOrigins[2], "random") == 0) {
+								srand((unsigned int)time(NULL));
+								int min = atoi(args[3]);
+								int max = atoi(args[4]);
+								variables[index].valueInt = (int)rand()%(max - min) + min;
+							}
+						}
+						else if (var.type == 1) {
+							if (strcmp(argOrigins[2], "+=") == 0) {
+								variables[index].valueFloat += (float)atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "-=") == 0) {
+								variables[index].valueFloat -= (float)atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "=") == 0) {
+								variables[index].valueFloat = (float)atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "*=") == 0) {
+								variables[index].valueFloat *= (float)atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "/=") == 0) {
+								variables[index].valueFloat /= (float)atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "%=") == 0) {
+								variables[index].valueFloat = (float)((int)(var.valueFloat) % (int)atof(args[3]));
+							}
+							else if (strcmp(argOrigins[2], "random") == 0) {
+								srand((unsigned int)time(NULL));
+								float min = (float)atof(args[3]);
+								float max = (float)atof(args[4]);
+								variables[index].valueFloat = (rand() % (int)((max - min) + min) * 1000) / 1000.0f;
+							}
+						}
+						else if (var.type == 2) {
+							if (strcmp(argOrigins[2], "+=") == 0) {
+								var.valueDouble += atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "-=") == 0) {
+								var.valueDouble -= atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "=") == 0) {
+								var.valueDouble = atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "*=") == 0) {
+								var.valueDouble *= atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "/=") == 0) {
+								var.valueDouble /= atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "%=") == 0) {
+								var.valueDouble = (int)(var.valueFloat) % (int)atof(args[3]);
+							}
+							else if (strcmp(argOrigins[2], "random") == 0) {
+								srand((unsigned int)time(NULL));
+								double min = atof(args[3]);
+								double max = atof(args[4]);
+								variables[index].valueDouble = (rand() % (int)((max - min) + min) * 1000) / 1000.0;
+							}
+						}
+						else {
+							printf("\nscoreboard can only used by number type variable");
+						}
+					}
 				}
 			}
 		}
@@ -396,7 +487,7 @@ void parseCode(unsigned int* token, int size) {
 	}
 }
 
-struct ParseTextResult ParseString(unsigned int* token, int start, int end) {
+struct ParseTextResult ParseString(int* token, int start, int end) {
 	char to;
 	int parsing = 0;
 	int varParse = 0;
@@ -447,7 +538,7 @@ struct ParseTextResult ParseString(unsigned int* token, int start, int end) {
 				toText = "null\0";
 			}
 			else if (var.type == 0) {
-				int length = getNumLength(var.valueInt);
+				int length = getNumLength((float)var.valueInt) + 4;
 				textSize = length;
 				toText = (char*)malloc(sizeof(char) * length);
 				sprintf(toText, "%d", var.valueInt);
@@ -459,7 +550,7 @@ struct ParseTextResult ParseString(unsigned int* token, int start, int end) {
 				sprintf(toText, "%.3lf", var.valueFloat);
 			}
 			else if (var.type == 2) {
-				int length = getNumLength(var.valueDouble);
+				int length = getNumLength((float)var.valueDouble);
 				textSize = length;
 				toText = (char*)malloc(sizeof(char) * length);
 				sprintf(toText, "%.3lf", var.valueDouble);
@@ -533,3 +624,18 @@ struct Variable findVariableByName(char* name) {
 
 	return var;
 }
+
+int findVariableIndex(struct Variable var_) {
+	for (int i = 0; i < varSize; i++) {
+		struct Variable var = variables[i];
+
+		if (!IsAccessableVariable(var)) continue;
+
+		if (strcmp(var.name, var_.name) == 0) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
