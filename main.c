@@ -3,13 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "safe.h"
 #ifdef __linux__
 #define scanf_s scanf
 #define printf_s printf
 #endif
-#define malloc malloc_s
-#define realloc realloc_s
 
 
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
@@ -88,7 +85,12 @@ int main(int argc, char* argv[]) {
 	char* token;
 	token = malloc(sizeof(char) * size);
 
-	int c = fgetc(fp);
+	if (token == NULL) {
+		printf("\ntoken is NULL");
+		return 0;
+	}
+
+	char c = fgetc(fp);
 	int i = 0;
 	while (c != EOF) {
 		token[i] = c;
@@ -139,8 +141,7 @@ void parseCode(char* token, int size) {
 	int varIndex = 0;
 	int varDeclared = 0;
 	int parsingString = 0;
-	variables = (struct Variable*)malloc(sizeof(struct Variable) * size);
-	varSize = size;
+	int parsingBlock = 0;
 
 	int funcCalled = 0;
 
@@ -469,28 +470,8 @@ void parseCode(char* token, int size) {
 
 								if (once) once = 0;
 							}
-							else if (strcmp(argOrigins[2], "*=") == 0) {
-								var.valueDouble *= atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "/=") == 0) {
-								var.valueDouble /= atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "%=") == 0) {
-								var.valueDouble = (int)(var.valueFloat) % (int)atof(args[3]);
-							}
-							else if (strcmp(argOrigins[2], "random") == 0) {
-								srand((unsigned int)time(NULL));
-								double min = atof(args[3]);
-								double max = atof(args[4]);
-								variables[index].valueDouble = (rand() % (int)((max - min) + min) * 1000) / 1000.0;
-							}
-						}
-						else {
-							printf("\nscoreboard can only used by number type variable");
 						}
 					}
-					free(args);
-					free(argOrigins);
 				}
 			}
 		}
@@ -603,7 +584,7 @@ struct ParseTextResult ParseString(char* token, int start, int end) {
 }
 
 char* getVariableName(char* name) {
-	int size = strlen(name);
+	int size = sizeof(name) / sizeof(char);
 
 	char* txt = (char*)malloc(sizeof(char) * (size));
 	int txtIndex = 0;
