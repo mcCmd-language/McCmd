@@ -467,6 +467,8 @@ void parseCode(int* token, int size) {
 							printf("\nscoreboard can only used by number type variable");
 						}
 					}
+					free(args);
+					free(argOrigins);
 				}
 			}
 		}
@@ -593,7 +595,7 @@ struct ParseTextResult ParseString(int* token, int start, int end) {
 }
 
 char* getVariableName(char* name) {
-	int size = sizeof(name) / sizeof(char);
+	int size = strlen(name);
 
 	char* txt = (char*)malloc(sizeof(char) * (size));
 	int txtIndex = 0;
