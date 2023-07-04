@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "safe.h"
 #ifdef __linux__
 #define scanf_s scanf
 #define printf_s printf
 #endif
+#define malloc malloc_s
+#define realloc realloc_s
 
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
 //variableType.. null = -1 int = 0, float = 1, double = 2, bool = 3, string = 4, array = 5, json = 6
@@ -80,11 +83,6 @@ int main(int argc, char* argv[]) {
 	int* token;
 	token = malloc(sizeof(int) * size);
 
-	if (token == NULL) {
-		printf("\ntoken is NULL");
-		return 0;
-	}
-
 	int c = fgetc(fp);
 	int i = 0;
 	while (c != EOF) {
@@ -118,7 +116,6 @@ void parseCode(int* token, int size) {
 	int parsingString = 0;
 	variables = (struct Variable*)malloc(sizeof(struct Variable) * size);
 	varSize = size;
-	if (variables == NULL) return;
 
 	int funcCalled = 0;
 
