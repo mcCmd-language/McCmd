@@ -56,10 +56,16 @@ int main(int argc, char* argv[]) {
 	//char* fileName = "../test/test.mcCmd";
 	//printf("%s", fileName);
 
+	if (argc < 2) {
+		printf("\nplease enter file path");
+
+		return 0;
+	}
+
 	fp = fopen(argv[1], "r");
 
 	if (fp == NULL) {
-		printf("\n파일을 찾을 수 없습니다.");
+		printf("\n%s doesn't exist", argv[1]);
 
 		return 0;
 	}

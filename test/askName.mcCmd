@@ -1,0 +1,7 @@
+##./debug/McCmd.exe ./test/askName.mcCmd
+
+/say "what is your name? : ";
+@ str[type=string];
+
+/replaceitem @str*;
+/say "your name is @str*";
