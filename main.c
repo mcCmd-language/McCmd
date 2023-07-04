@@ -14,13 +14,38 @@ struct Variable {
 	int strSize;
 	float valueFloat;
 	double valueDouble;
+	int declared;
+};
+
+struct ParseTextResult {
+	char* parsed;
+	int size;
 };
 
 long fsize(FILE*);
 void parseCode(unsigned int*, int size);
-char* ParseString(unsigned int*, int, int);
+struct ParseTextResult ParseString(unsigned int*, int, int);
 struct Variable findVariableByName(char*);
 char* getVariableName(char*);
+
+int IsAccessableVariable(struct Variable var) {
+	if (var.type > 6 || var.type < -1) return 0;
+	else return 1;
+}
+
+int getNumLength(float num) {
+	int count = 0;
+	while (num > 0) {
+		num /= 10;
+		count++;
+	}
+	while (num < 0) {
+		num *= 10;
+		count++;
+	}
+
+	return count;
+}
 
 struct Variable* variables;
 int varSize = 0;
@@ -28,13 +53,13 @@ int varSize = 0;
 int main(int argc, char* argv[]) {
 
 	FILE* fp;
-	char* fileName = "../test/test.mcCmd";
-	printf("%s", fileName);
+	//char* fileName = "../test/test.mcCmd";
+	//printf("%s", fileName);
 
-	fp = fopen(fileName, "r");
+	fp = fopen(argv[1], "r");
 
 	if (fp == NULL) {
-		printf_s("\n파일을 찾을 수 없습니다.");
+		printf("\n파일을 찾을 수 없습니다.");
 
 		return 0;
 	}
@@ -132,6 +157,8 @@ void parseCode(unsigned int* token, int size) {
 
 					//printf("\n%s - var.name %d", var.name, varIndex);
 
+					var.declared = 1;
+
 					variables[varIndex] = var;
 					varIndex++;
 					varDeclared = 1;
@@ -191,6 +218,8 @@ void parseCode(unsigned int* token, int size) {
 						//printf("\n%s - varArg", varArg);
 						//printf("\n%s - varValue", varValue);
 
+						struct ParseTextResult parse;
+
 
 						if (strcmp(varArg, "type") == 0) {
 							if (strcmp(varValue, "int") == 0) {
@@ -226,12 +255,15 @@ void parseCode(unsigned int* token, int size) {
 
 									break;
 								case 4:
-									variables[varIndex - 1].valueStr = (char*)malloc(sizeof(char) * (parseEnd - parseStart + 2));
-									for (int i = 0; i < parseEnd - parseStart; i++) {
-										variables[varIndex - 1].valueStr[i] = varValue[i];
+									parse = ParseString(varValue, 0, parseEnd - parseStart);
+
+									variables[varIndex - 1].valueStr = (char*)malloc(sizeof(char) * parse.size);
+
+									for (int j = 0; j < parse.size; j++) {
+										variables[varIndex - 1].valueStr[j] = parse.parsed[j];
 									}
-									variables[varIndex - 1].valueStr[parseEnd - parseStart + 1] = '\0';
-									variables[varIndex - 1].strSize = parseEnd - parseStart + 1;
+									variables[varIndex - 1].valueStr[parse.size + 1] = '\0';
+									variables[varIndex - 1].strSize = parse.size + 1;
 
 									break;
 								default:
@@ -261,6 +293,7 @@ void parseCode(unsigned int* token, int size) {
 					int argIndex = 0;
 					char to;
 					for (int j = 0; j <= parseEnd - parseStart + 1; j++) {
+
 						to = token[parseStart + j + 1];
 
 						if (to == '"') {
@@ -276,25 +309,32 @@ void parseCode(unsigned int* token, int size) {
 						if ((to == ' ' || to == ';') && !parsingString) {
 							argEnd = j - 1;
 
-							char* parsedStr = ParseString(token, parseStart + argStart + 1, parseStart + argEnd + 1);
+							struct ParseTextResult parsedStr = ParseString(token, parseStart + argStart + 1, parseStart + argEnd + 1);
 
-							for (int s = 0; s <= argEnd - argStart; s++) {
-								args[argIndex][s] = parsedStr[s];
+							args[argIndex] = (char*)malloc(sizeof(char) * parsedStr.size);
+							argOrigins[argIndex] = (char*)malloc(sizeof(char) * (argEnd - argStart + 1));
+
+							for (int s = 0; s <= parsedStr.size; s++) {
+								args[argIndex][s] = parsedStr.parsed[s];
+							}
+							for (int s = 0; s <= argEnd - argStart + 1; s++) {
 								argOrigins[argIndex][s] = token[parseStart + s + argStart + 1];
-								//printf("\ntw - %c %d %d %d", token[parseStart + s + argStart + 1], parseStart, s, argIndex);
+								//printf("\ntw - %c %d %d %d", argOrigins[argIndex][s], parsedStr.size, s, argIndex);
 							}
 
-							args[argIndex][argEnd - argStart + 1] = '\0';
+							args[argIndex][parsedStr.size] = '\0';
 							argOrigins[argIndex][argEnd - argStart + 1] = '\0';
-							//printf("\n%s - %d", args[argIndex], argEnd);
 							argIndex++;
 							argStart = j + 1;
 						}
 					}
 
-					if (strcmp(args[0], "say") == 0) {
+					//printf("\n%s - %s, %s", args[0], args[1], args[2]);
+					//printf("\n%s - %s, %s", argOrigins[0], argOrigins[1], argOrigins[2]);
+
+					if (strcmp(argOrigins[0], "say") == 0) {
 						printf("\n%s", args[1]);
-					} else if (strcmp(args[0], "replaceitem") == 0) {
+					} else if (strcmp(argOrigins[0], "replaceitem") == 0) {
 						char* name = getVariableName(argOrigins[1]);
 						struct Variable var = findVariableByName(name);
 						if (var.type == -1) {
@@ -320,10 +360,11 @@ void parseCode(unsigned int* token, int size) {
 							}
 						}
 						else if (var.type == 4) {
-							char* input = (char*)malloc(sizeof(char) * 1000000);
-							scanf("%s", input);
+							char* input;
 
-							realloc(var.valueStr, 1000 * sizeof(char));
+							if (strlen(args[2]) > 1) input = (char*)malloc(sizeof(char) * atoi(args[2]));
+							else input = (char*)malloc(sizeof(char) * 1000000);
+							scanf("%s", input);
 
 							strcpy(var.valueStr, input);
 						}
@@ -349,7 +390,7 @@ void parseCode(unsigned int* token, int size) {
 	}
 }
 
-char* ParseString(unsigned int* token, int start, int end) {
+struct ParseTextResult ParseString(unsigned int* token, int start, int end) {
 	char to;
 	int parsing = 0;
 	int varParse = 0;
@@ -399,6 +440,31 @@ char* ParseString(unsigned int* token, int start, int end) {
 				textSize = 5;
 				toText = "null\0";
 			}
+			else if (var.type == 0) {
+				int length = getNumLength(var.valueInt);
+				textSize = length;
+				toText = (char*)malloc(sizeof(char) * length);
+				sprintf(toText, "%d", var.valueInt);
+			}
+			else if (var.type == 1) {
+				int length = getNumLength(var.valueFloat);
+				textSize = length;
+				toText = (char*)malloc(sizeof(char) * length);
+				sprintf(toText, "%.3lf", var.valueFloat);
+			}
+			else if (var.type == 2) {
+				int length = getNumLength(var.valueDouble);
+				textSize = length;
+				toText = (char*)malloc(sizeof(char) * length);
+				sprintf(toText, "%.3lf", var.valueDouble);
+			}
+			else if (var.type == 3) {
+				textSize = 5;
+				toText = (char*)malloc(sizeof(char) * 5);
+				
+				if (var.valueBool == 1) strcpy(toText, "true");
+				else strcpy(toText, "false");
+			}
 			else if (var.type == 4) {
 				textSize = var.strSize + 1;
 				toText = (char*)malloc(sizeof(char) * (var.strSize + 1));
@@ -423,7 +489,9 @@ char* ParseString(unsigned int* token, int start, int end) {
 	}
 	txt[txtIndex + 1] = '\0';
 
-	return txt;
+	struct ParseTextResult result = { txt, txtIndex };
+
+	return result;
 }
 
 char* getVariableName(char* name) {
@@ -446,7 +514,9 @@ struct Variable findVariableByName(char* name) {
 	for (int i = 0; i < varSize; i++) {
 		struct Variable var = variables[i];
 
-		if (var.name != NULL && var.type != -1 && strcmp(var.name, name) == 0) {
+		if (!IsAccessableVariable(var)) continue;
+
+		if (strcmp(var.name, name) == 0) {
 			return var;
 		}
 	}
