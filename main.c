@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "safe.h"
 #ifdef __linux__
 #define scanf_s scanf
 #define printf_s printf
 #endif
-
+#define malloc malloc_s
+#define realloc realloc_s
 
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
 //variableType.. null = -1 int = 0, float = 1, double = 2, bool = 3, string = 4, array = 5, json = 6
@@ -101,7 +103,7 @@ int main(int argc, char* argv[]) {
 
 	variables = (struct Variable*)malloc(sizeof(struct Variable) * size);
 	varSize = size;
-	if (variables == NULL) return;
+	if (variables == NULL) return 0;
 
 	parseCode(token, size);
 
@@ -109,8 +111,8 @@ int main(int argc, char* argv[]) {
 	printf("\n\n");
 
 	for (int i = 0; i <= varSize; i++) {
-		if (variables[i].name == NULL) return;
-		if (!IsAccessableVariable(variables[i])) return;
+		if (variables[i].name == NULL) return 0;
+		if (!IsAccessableVariable(variables[i])) return 0;
 		if (variables[i].type == 0) printf("\n%s(int) - %d", variables[i].name, variables[i].valueInt);
 		else if (variables[i].type == 1) printf("\n%s(float) - %.3lf", variables[i].name, variables[i].valueFloat);
 		else if (variables[i].type == 2) printf("\n%s(double) - %.3lf", variables[i].name, variables[i].valueDouble);
@@ -584,7 +586,7 @@ struct ParseTextResult ParseString(char* token, int start, int end) {
 }
 
 char* getVariableName(char* name) {
-	int size = sizeof(name) / sizeof(char);
+	int size = strlen(name);
 
 	char* txt = (char*)malloc(sizeof(char) * (size));
 	int txtIndex = 0;
