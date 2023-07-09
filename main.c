@@ -414,7 +414,7 @@ void parseCode(char* token, int size) {
 						}
 						else if (var.type == 3) {
 							char type[5];
-							scanf("%s", &type);
+							scanf("%s", type);
 							if (strcmp(type, "true")) {
 								var.valueBool = 1;
 							}
