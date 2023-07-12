@@ -1,0 +1,5 @@
+cc_binary(
+    srcs=["main.c", "safe.c"],
+    includes=["safe.h"],
+    name="main"
+)
