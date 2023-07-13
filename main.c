@@ -8,7 +8,7 @@
 #define scanf_s scanf
 #define printf_s printf
 #endif
-#define malloc malloc_s
+//#define malloc malloc_s
 #define realloc realloc_s
 
 //define = 0, defineVariable = 1, variableArgs = 2, defineFunc = 3, funcVariable = 4, callFunc = 5 
@@ -58,6 +58,26 @@ int getNumLength(float num) {
 	return count + 1;
 }
 
+char* getDir(char* path) {
+	int pathLength = strlen(path);
+	unsigned short fileNameEndIdx = 0;
+
+	char* mpFilePath;
+
+	for (int i = pathLength; i > 0; i--) {
+		if (path[i] == '\\') {
+			fileNameEndIdx = i;
+			break;
+		}
+	}
+
+	mpFilePath = (char*)malloc(sizeof(char) * fileNameEndIdx + 2);
+	memcpy_s(mpFilePath, fileNameEndIdx, path, fileNameEndIdx);
+	mpFilePath[fileNameEndIdx + 1] = '\0';
+
+	return mpFilePath;
+}
+
 struct Variable* variables;
 int varSize = 0;
 
@@ -75,6 +95,7 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
+	printf("%s", getDir(argv[1]));
 	fp = fopen(argv[1], "r");
 
 	if (fp == NULL) {
