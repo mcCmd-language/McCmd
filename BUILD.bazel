@@ -1,5 +1,11 @@
+cc_library(
+    name = "safe",
+    srcs = ["safe.c"],
+    hdrs = ["safe.h"],
+)
+
 cc_binary(
-    srcs=["main.c", "safe.c"],
-    includes=["safe.h"],
-    name="main"
+    name = "main",
+    srcs = ["main.c"],
+    deps = [":safe"],
 )
