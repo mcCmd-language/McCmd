@@ -50,7 +50,8 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-.vs# community/Bazel.gitignore by ignofierplus
+.vs
+# community/Bazel.gitignore by ignofierplus
 # gitignore template for Bazel build system
 # website: https://bazel.build/
 
@@ -64,3 +65,5 @@ dkms.conf
 /.ijwb/
 /.aswb/
 /.clwb/
+
+.log

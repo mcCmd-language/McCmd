@@ -1,6 +1,17 @@
-﻿  main.c
+﻿  parseCode.c
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(2,10): warning C4067: 전처리기 지시문 다음에 예기치 않은 토큰이 있습니다. 줄 바꿈 문자가 필요합니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.h(1,10): warning C4067: 전처리기 지시문 다음에 예기치 않은 토큰이 있습니다. 줄 바꿈 문자가 필요합니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(82,17): warning C4033: 'parseMain'은(는) 값을 반환해야 합니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(576,24): warning C4047: '함수': 'Variable *'의 간접 참조 수준이 'char ***'과(와) 다릅니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(576,18): warning C4024: 'func': 형식 및 실제 매개 변수 1의 형식이 서로 다릅니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(576,38): warning C4047: '함수': 'Variable *'의 간접 참조 수준이 'char ***'과(와) 다릅니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(576,26): warning C4024: 'func': 형식 및 실제 매개 변수 2의 형식이 서로 다릅니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(912,22): warning C4047: '=': 'char *'의 간접 참조 수준이 'char'과(와) 다릅니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(907,8): warning C4047: '초기화 중': 'char *'의 간접 참조 수준이 'char **'과(와) 다릅니다.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(962,65): warning C4047: '=': 'LibFunc *'의 간접 참조 수준이 'char **'과(와) 다릅니다.
   코드를 생성하고 있습니다.
-  2 of 23 functions ( 8.7%) were compiled, the rest were copied from previous compilation.
+C:\Users\minyee2913\Desktop\McCmd\parseCode.c(134): warning C4715: 'parseMain': 모든 제어 경로에서 값을 반환하지는 않습니다.
+  2 of 28 functions ( 7.1%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     1 functions had inline decision re-evaluated but remain unchanged
   코드를 생성했습니다.

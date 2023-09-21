@@ -1,0 +1,13 @@
+@ i[type=int,value=0];
+@ j[type=int,value=0];
+@ one[type=int,value=1];
+@ str[type=string,value="_"];
+
+/execute at @i* while < 10 run #
+
+    /scoreboard @j* = 0;
+    /execute at @j* while < 10 run #
+        /say "@i* @j*";
+    # score += 1;
+
+# score += 1;
