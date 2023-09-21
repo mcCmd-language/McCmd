@@ -21,9 +21,36 @@
 ```
 @ <변수 이름>[type=<자료형>,value=<값>];
 ```
-### 함수 선언
+### 함수 선언 - (미구현)
 ```
-@ /<함수 이름> <args...> #
+@ /<함수 이름> <매개변수명>@<매개변수형식>... #
     ## 구현
 #;
+```
+매개변수와 구현(코드블럭)의 차이가 없고 가장 마지막 매개변수로 코드 블럭을 인식합니다.
+## 기본 함수
+#### `/say <string>/<variable>;` - 문자열 혹은 변수를 출력합니다.
+#### `/replaceitem <variable> <memorySize|int|optional>;` - 입력 받은 정보를 변수에 저장합니다.
+## 변수 / 함수 호출
+### 변수 호출
+```
+@ age[type=int,value=5];
+@ name[type=string,value="steve"];
+/say "내 나이는 @age*입니다.";
+/say @name*;
+
+## 출력:
+## 내 나이는 5입니다.
+## steve
+```
+### 함수 호출
+```
+@ /kill name@string #
+    /say "@name* is dead";
+#;
+
+/kill "beomgeun";
+
+## 출력:
+## beomgeun is dead
 ```
