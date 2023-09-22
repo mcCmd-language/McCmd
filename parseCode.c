@@ -66,22 +66,22 @@ int parseMain(int argc, char* argv[]) {
 
 	FILE* fp;
 	//char* fileName = argv[1];
-	char *fileName = "./test/execute.mcCmd";
-	printf("%s\n", fileName);
+	//char *fileName = "./test/ex1.mcCmd";
+	//printf("%s\n", fileName);
 
-	//if (argc < 2) {
-	//	printf("\nplease enter file path");
+	if (argc < 2) {
+		printf("\nplease enter file path");
 
-	//	return 0;
-	//}
+		return 0;
+	}
 
-	//char* path = getDir(argv[1]);
-	//printf("%s", path);
-	//free(path);
+	char* path = getDir(argv[1]);
+	printf("%s", path);
+	free(path);
 
-	if (!fileName) return;
+	//if (!fileName) return;
 
-	fp = fopen(fileName, "r");
+	fp = fopen(argv[1], "r");
 
 	if (fp == NULL) {
 		printf("\n%s doesn't exist", argv[1]);

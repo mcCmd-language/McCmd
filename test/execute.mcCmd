@@ -1,7 +1,5 @@
 @ i[type=int,value=0];
 @ j[type=int,value=0];
-@ one[type=int,value=1];
-@ str[type=string,value="_"];
 
 /execute at @i* while < 10 run #
 
